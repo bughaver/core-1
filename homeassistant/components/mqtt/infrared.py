@@ -68,7 +68,7 @@ class SignalMessage(TypedDict):
 
 
 def validate_mqtt_infrared_config(config_value: dict[str, Any]) -> ConfigType:
-    """Validate MQTT light schema for discovery."""
+    """Validate MQTT infrared entity schema."""
     schemas: dict[str, VolSchemaType] = {
         "emitter": EMITTER_SCHEMA,
         "receiver": RECEIVER_SCHEMA,
@@ -167,7 +167,9 @@ class MqttInfraredEmitterEntity(MqttEntity, InfraredEmitterEntity):
             "modulation": command.modulation,
             "repeat_count": command.repeat_count,
         }
-        payload = self._command_template(orjson.dumps(command_vars), command_vars)
+        payload = self._command_template(
+            orjson.dumps(command_vars).decode(), command_vars
+        )
         await self.async_publish_with_config(self._config[CONF_COMMAND_TOPIC], payload)
 
 
@@ -178,9 +180,6 @@ class MqttInfraredReceiverEntity(MqttEntity, InfraredReceiverEntity):
     _default_name = DEFAULT_RECEIVER_NAME
     _entity_id_format = infrared.ENTITY_ID_FORMAT
 
-    _command_template: Callable[
-        [PublishPayloadType, dict[str, Any]], PublishPayloadType
-    ]
     _value_template: Callable[[ReceivePayloadType], ReceivePayloadType]
 
     @staticmethod
@@ -233,14 +232,3 @@ class MqttInfraredReceiverEntity(MqttEntity, InfraredReceiverEntity):
     async def _subscribe_topics(self) -> None:
         """(Re)Subscribe to topics."""
         subscription.async_subscribe_topics_internal(self.hass, self._sub_state)
-
-    async def async_send_command(self, command: InfraredCommand) -> None:
-        """Send an IR command via MQTT."""
-
-        command_vars: dict[str, Any] = {
-            "timings": command.get_raw_timings(),
-            "modulation": command.modulation,
-            "repeat_count": command.repeat_count,
-        }
-        payload = self._command_template(orjson.dumps(command_vars), command_vars)
-        await self.async_publish_with_config(self._config[CONF_COMMAND_TOPIC], payload)
