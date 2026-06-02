@@ -68,7 +68,7 @@ class SignalMessage(TypedDict):
 
 
 def validate_mqtt_infrared_config(config_value: dict[str, Any]) -> ConfigType:
-    """Validate MQTT infrared entity schema."""
+    """Validate MQTT infrared entity config schema."""
     schemas: dict[str, VolSchemaType] = {
         "emitter": EMITTER_SCHEMA,
         "receiver": RECEIVER_SCHEMA,
@@ -77,35 +77,48 @@ def validate_mqtt_infrared_config(config_value: dict[str, Any]) -> ConfigType:
     return config
 
 
-INFRARED_BASE_SCHEMA = MQTT_BASE_SCHEMA.extend(
-    {
-        vol.Required(CONF_SCHEMA): vol.All(vol.Lower, vol.Any("emitter", "receiver")),
-        vol.Optional(CONF_NAME): vol.Any(cv.string, None),
-    },
-).extend(MQTT_ENTITY_COMMON_SCHEMA.schema)
+def validate_mqtt_infrared_discovery(config_value: dict[str, Any]) -> ConfigType:
+    """Validate MQTT infrared entity discovery schema."""
+    schemas: dict[str, VolSchemaType] = {
+        "emitter": EMITTER_SCHEMA.extend({}, extra=vol.ALLOW_EXTRA),
+        "receiver": RECEIVER_SCHEMA.extend({}, extra=vol.ALLOW_EXTRA),
+    }
+    config: ConfigType = schemas[config_value[CONF_SCHEMA]](config_value)
+    return config
 
-EMITTER_SCHEMA = INFRARED_BASE_SCHEMA.extend(
+
+INFRARED_BASE_SCHEMA = vol.Schema(
+    {vol.Required(CONF_SCHEMA): vol.All(vol.Lower, vol.Any("emitter", "receiver"))},
+    extra=vol.ALLOW_EXTRA,
+)
+
+EMITTER_SCHEMA = MQTT_BASE_SCHEMA.extend(
     {
+        vol.Required(CONF_SCHEMA): "emitter",
         vol.Required(CONF_COMMAND_TOPIC): valid_publish_topic,
         vol.Optional(CONF_COMMAND_TEMPLATE): cv.template,
         vol.Optional(CONF_RETAIN, default=DEFAULT_RETAIN): cv.boolean,
         vol.Optional(CONF_NAME): vol.Any(cv.string, None),
     }
-)
+).extend(MQTT_ENTITY_COMMON_SCHEMA.schema)
 
-RECEIVER_SCHEMA = INFRARED_BASE_SCHEMA.extend(
+RECEIVER_SCHEMA = MQTT_BASE_SCHEMA.extend(
     {
+        vol.Required(CONF_SCHEMA): "receiver",
         vol.Required(CONF_STATE_TOPIC): valid_subscribe_topic,
         vol.Optional(CONF_VALUE_TEMPLATE): cv.template,
         vol.Optional(CONF_NAME): vol.Any(cv.string, None),
     }
-)
+).extend(MQTT_ENTITY_COMMON_SCHEMA.schema)
 
 PLATFORM_SCHEMA_MODERN = vol.All(
-    INFRARED_BASE_SCHEMA.extend({}, extra=vol.ALLOW_EXTRA),
+    INFRARED_BASE_SCHEMA,
     validate_mqtt_infrared_config,
 )
-DISCOVERY_SCHEMA = PLATFORM_SCHEMA_MODERN
+DISCOVERY_SCHEMA = vol.All(
+    INFRARED_BASE_SCHEMA,
+    validate_mqtt_infrared_discovery,
+)
 
 
 async def async_setup_entry(
