@@ -189,10 +189,6 @@ class MqttInfraredReceiverEntity(MqttEntity, InfraredReceiverEntity):
 
     def _setup_from_config(self, config: ConfigType) -> None:
         """(Re)Setup the entity."""
-        self._command_template = MqttCommandTemplate(
-            config.get(CONF_COMMAND_TEMPLATE),
-            entity=self,
-        ).async_render
         self._value_template = MqttValueTemplate(
             config.get(CONF_VALUE_TEMPLATE),
             entity=self,
