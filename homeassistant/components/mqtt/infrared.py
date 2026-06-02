@@ -201,7 +201,7 @@ class MqttInfraredReceiverEntity(MqttEntity, InfraredReceiverEntity):
     @callback
     def _handle_state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle receiving state message via MQTT."""
-        payload = str(self._value_template(msg.payload))
+        payload = self._value_template(msg.payload)
         try:
             payload_dict = SIGNAL_SCHEMA(json_loads_object(payload))
             signal_message = SignalMessage(
