@@ -212,9 +212,9 @@ class MqttInfraredReceiverEntity(MqttEntity, InfraredReceiverEntity):
             _LOGGER.warning(
                 "Invalid message received for %s on topic %s, with template %s. "
                 "Message is not a valid signal JSON message. Got %s",
+                self.entity_id,
                 self._config[CONF_STATE_TOPIC],
                 self._config.get(CONF_VALUE_TEMPLATE),
-                msg.topic,
                 msg.payload,
             )
         else:
